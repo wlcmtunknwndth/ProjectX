@@ -8,6 +8,7 @@ services:
       target: final
     ports:
       - "63342:63342"
+      - "63345:63345"
     networks: ["nats"]
     depends_on:
        postgres:

@@ -18,12 +18,18 @@ type Event struct {
 	Price        uint      `json:"price"`
 	Restrictions uint      `json:"restrictions"`
 	Date         time.Time `json:"date"`
-	Feature      string    `json:"feature,omitempty"`
+	Feature      []string  `json:"feature,omitempty"`
 	City         string    `json:"city"`
 	Address      string    `json:"address"`
 	Name         string    `json:"name"`
 	ImgPath      string    `json:"img_path"`
 	Description  string    `json:"description"`
+}
+
+type Index struct {
+	Id        uint
+	EventId   uint
+	FeatureId []sql.NullInt64
 }
 
 func EventToJSON(event *Event) ([]byte, error) {

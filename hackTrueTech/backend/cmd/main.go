@@ -44,6 +44,14 @@ func main() {
 		//TLSConfig:    m.TLSConfig(),
 	}
 
+	fileHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("./data")))
+	go func() {
+		if err := http.ListenAndServe(":63345", fileHandler); err != nil {
+			slog.Error("couldn't run file server")
+			return
+		}
+	}()
+
 	db, err := postgres.New(&cfg.DB)
 	if err != nil {
 		slog.Error("couldn't connect to storage", slogResponse.SlogOp(scope), slogResponse.SlogErr(err))

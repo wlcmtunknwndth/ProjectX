@@ -26,15 +26,22 @@ CREATE TABLE public.events(
 
 CREATE TABLE public.features(
     id BIGSERIAL CHECK (id > 0) PRIMARY KEY,
+    Tag VARCHAR(64) UNIQUE,
     Name VARCHAR(128) UNIQUE
-    Tag VARCHAR(64) UNIQUE
-)
+);
+
+INSERT INTO features(Tag, Name) VALUES ('blind', 'Слепые и слабовидящие');
+INSERT INTO features(Tag, Name) VALUES ('deaf', 'Глухие и слабослышащие');
+INSERT INTO features(Tag, Name) VALUES ('disability', 'Люди с ограниченной мобильностью');
+INSERT INTO features(Tag, Name) VALUES ('neuro', 'Люди с нейроотличиями');
 
 CREATE TABLE public.index(
     id BIGSERIAL PRIMARY KEY,
-    event_id BIGINT CHECK (event_id > 0)
+    event_id BIGINT CHECK (event_id > 0),
     features BIGINT[]
-)
-CREATE TABLE public.cache(
+);
+
+CREATE TABLE public.cache
+(
     id BIGINT CHECK (id > 0) PRIMARY KEY
-)
+);

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/wlcmtunknwndth/hackBPA/internal/config"
+	"os"
 	"sync"
 )
 
@@ -23,6 +24,10 @@ func New(config *config.Database) (*Storage, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
+	err = os.Mkdir("data", 0666)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
