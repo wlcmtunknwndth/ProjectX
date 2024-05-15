@@ -34,8 +34,8 @@ func New(db Storage, expTime time.Duration, purgeTime time.Duration) *Cacher {
 	}
 }
 
-func formatUint(num uint) string {
-	return strconv.FormatUint(uint64(num), 10)
+func formatUint(num uint64) string {
+	return strconv.FormatUint(num, 10)
 }
 
 func formatString(numStr string) uint {

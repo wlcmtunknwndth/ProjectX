@@ -5,13 +5,10 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/wlcmtunknwndth/hackBPA/internal/config"
-	"os"
-	"sync"
 )
 
 type Storage struct {
 	driver *sql.DB
-	mtx    sync.RWMutex
 }
 
 func New(config *config.Database) (*Storage, error) {
@@ -24,11 +21,7 @@ func New(config *config.Database) (*Storage, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	err = os.Mkdir("data", 0666)
-	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-	if err := db.Ping(); err != nil {
+	if err = db.Ping(); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -42,19 +35,3 @@ func (s *Storage) Close() error {
 func (s *Storage) Ping() error {
 	return s.driver.Ping()
 }
-
-//func (s *Storage) Lock() {
-//	s.mtx.Lock()
-//}
-//
-//func (s *Storage) Unlock() {
-//	s.mtx.Unlock()
-//}
-//
-//func (s *Storage) RLock() {
-//	s.mtx.RLock()
-//}
-//
-//func (s *Storage) RUnlock() {
-//	s.mtx.RUnlock()
-//}

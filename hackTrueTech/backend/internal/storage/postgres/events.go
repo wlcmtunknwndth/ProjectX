@@ -5,12 +5,7 @@ import (
 	"fmt"
 	"github.com/lib/pq"
 	"github.com/wlcmtunknwndth/hackBPA/internal/storage"
-	"os"
 	"slices"
-)
-
-const (
-	imageFolder = "./data"
 )
 
 var featuresToId = map[string]int{
@@ -20,18 +15,17 @@ var featuresToId = map[string]int{
 	"neuro":      4,
 }
 
-var idToFeature = map[uint]string{
+var idToFeature = map[uint64]string{
 	1: "blind",
 	2: "deaf",
 	3: "disability",
 	4: "neuro",
 }
 
-func (s *Storage) GetEvent(ctx context.Context, id uint) (*storage.Event, error) {
+func (s *Storage) GetEvent(ctx context.Context, id uint64) (*storage.Event, error) {
 	const op = "storage.postgres.events.GetEvent"
 
 	var index storage.Index
-	//pq.Array()
 	err := s.driver.QueryRowContext(ctx, getIndex, &id).Scan(&index.EventId, pq.Array(&index.FeatureId))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -48,7 +42,7 @@ func (s *Storage) GetEvent(ctx context.Context, id uint) (*storage.Event, error)
 	}
 
 	for _, val := range index.FeatureId {
-		ftr, ok := idToFeature[uint(val.Int64)]
+		ftr, ok := idToFeature[uint64(val.Int64)]
 		if !ok {
 			continue
 		}
@@ -56,15 +50,6 @@ func (s *Storage) GetEvent(ctx context.Context, id uint) (*storage.Event, error)
 	}
 
 	return &event, nil
-}
-
-func createEventFolder(id uint) error {
-	const op = "storage.postgres.createEventFolder"
-	err := os.Mkdir(fmt.Sprintf("%s/%d", imageFolder, id), 0777)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
-	}
-	return nil
 }
 
 func cmpStrings(a, b string) int {
@@ -86,19 +71,15 @@ func cmpStrings(a, b string) int {
 	return 0
 }
 
-func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint, error) {
+func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64, error) {
 	const op = "storage.postgres.events.CreateEvent"
 
-	var id uint
+	var id uint64
 	err := s.driver.QueryRowContext(ctx, createEvent, &event.Price,
 		&event.Restrictions, &event.Date, &event.City,
-		&event.Address, &event.Name, imageFolder, &event.Description,
+		&event.Address, &event.Name, &event.ImgPath, &event.Description,
 	).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("%s: %w", op, err)
-	}
-
-	if err = createEventFolder(id); err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -114,7 +95,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint, 
 		}
 	}
 
-	var indId uint
+	var indId uint64
 	if err = s.driver.QueryRowContext(ctx, createIndex, &id, pq.Array(features)).Scan(&indId); err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -122,7 +103,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint, 
 	return indId, nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, id uint) error {
+func (s *Storage) DeleteEvent(ctx context.Context, id uint64) error {
 	const op = "storage.postgres.events.DeleteEvent"
 
 	if _, err := s.driver.ExecContext(ctx, deleteEvent, id); err != nil {
@@ -142,15 +123,3 @@ func (s *Storage) PatchEvent(ctx context.Context, event *storage.Event) error {
 	}
 	return nil
 }
-
-//func (s *Storage) GetEventsByFeature(ctx context.Context, date time.Time, feature string) ([]storage.Event, error) {
-//	if len(feature) != 0 {
-//		features := strings.Split(feature, featureSep)
-//		if len(features) != 0 {
-//			slices.SortFunc(features, compareStrings.CmpStr)
-//			feature = strings.Join(features, featureSep)
-//		}
-//	}
-//	rows, err := s.driver.QueryRowContext()
-//
-//}

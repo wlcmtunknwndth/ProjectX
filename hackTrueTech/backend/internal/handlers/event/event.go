@@ -44,35 +44,22 @@ func (e *EventsHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	corsSkip.EnableCors(w, r)
-	body := r.Body
-	defer func(body io.ReadCloser) {
-		err := body.Close()
-		if err != nil {
-			slog.Error("couldn't close request body", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
-		}
-	}(body)
 
-	data, err := io.ReadAll(body)
+	event, err := storage.ParseFormData(r)
 	if err != nil {
-		slog.Error("couldn't read body", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
-		httpResponse.Write(w, http.StatusBadRequest, StatusBadRequest)
-		return
-	}
-	var event storage.Event
-	if err = json.Unmarshal(data, &event); err != nil {
-		slog.Error("couldn't decode body", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+		slog.Error("couldn't parse form-data", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		httpResponse.Write(w, http.StatusBadRequest, StatusBadRequest)
 		return
 	}
 
-	id, err := e.Broker.AskSave(&event)
+	id, err := e.Broker.AskSave(event)
 	if err != nil {
 		slog.Error("couldn't send event to broker", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
 		return
 	}
 	event.Id = id
-	e.Cache.CacheOrder(event)
+	e.Cache.CacheOrder(*event)
 
 	httpResponse.Write(w, http.StatusCreated, fmt.Sprintf("%s: id: %d", StatusEventCreated, id))
 }
@@ -90,6 +77,8 @@ func (e *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 			slog.Error("couldn't send event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 			httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
 			return
+		} else {
+			return
 		}
 	}
 
@@ -99,7 +88,7 @@ func (e *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		httpResponse.Write(w, http.StatusBadRequest, StatusBadRequest)
 		return
 	}
-	data, err := e.Broker.AskEvent(uint(id))
+	data, err := e.Broker.AskEvent(id)
 	if err != nil {
 		slog.Error("couldn't get event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
@@ -107,7 +96,6 @@ func (e *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	time.Sleep(time.Second)
 
-	//w.WriteHeader(http.StatusOK)
 	if _, err = w.Write(data); err != nil {
 		slog.Error("couldn't send event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
@@ -168,7 +156,7 @@ func (e *EventsHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = e.Broker.AskDelete(uint(id)); err != nil {
+	if err = e.Broker.AskDelete(id); err != nil {
 		slog.Error("couldn't delete event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
 		return

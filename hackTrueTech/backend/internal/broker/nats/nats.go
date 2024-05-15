@@ -10,9 +10,9 @@ import (
 )
 
 type Storage interface {
-	GetEvent(context.Context, uint) (*storage.Event, error)
-	DeleteEvent(context.Context, uint) error
-	CreateEvent(context.Context, *storage.Event) (uint, error)
+	GetEvent(context.Context, uint64) (*storage.Event, error)
+	DeleteEvent(context.Context, uint64) error
+	CreateEvent(context.Context, *storage.Event) (uint64, error)
 	PatchEvent(context.Context, *storage.Event) error
 }
 

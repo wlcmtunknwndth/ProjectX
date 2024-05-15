@@ -23,11 +23,11 @@ const (
 	AskPatchEvent   = "patch."
 )
 
-func convertUintToString(num uint) string {
+func convertUintToString(num uint64) string {
 	return strconv.FormatUint(uint64(num), 10)
 }
 
-func convertUintToByte(num uint) []byte {
+func convertUintToByte(num uint64) []byte {
 	var data = []byte{byte(0)}
 	if num == 0 {
 		return data
@@ -45,11 +45,11 @@ func (n *Nats) EventSender(ctx context.Context) (*nats.Subscription, error) {
 	sub, err := n.b.Subscribe(MustSendEvent, func(msg *nats.Msg) {
 		id, err := convertStrToUint(msg.Subject[4:])
 		if err != nil {
-			slog.Error("couldn't convert str to uint", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+			slog.Error("couldn't convert str to uint64", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 			return
 		}
 
-		event, err := n.db.GetEvent(ctx, uint(id))
+		event, err := n.db.GetEvent(ctx, id)
 		if err != nil {
 			slog.Error("couldn't get event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 			return
@@ -72,7 +72,7 @@ func (n *Nats) EventSender(ctx context.Context) (*nats.Subscription, error) {
 	return sub, nil
 }
 
-func (n *Nats) AskEvent(id uint) ([]byte, error) {
+func (n *Nats) AskEvent(id uint64) ([]byte, error) {
 	const op = "broker.nats.event.GetEvent"
 
 	msg, err := n.b.Request(AskGetEvent+convertUintToString(id), nil, 5*time.Second)
@@ -108,7 +108,7 @@ func (n *Nats) EventSaver(ctx context.Context) (*nats.Subscription, error) {
 	return sub, nil
 }
 
-func (n *Nats) AskSave(event *storage.Event) (uint, error) {
+func (n *Nats) AskSave(event *storage.Event) (uint64, error) {
 	const op = "broker.nats.Event.AskSave"
 	data, err := json.Marshal(*event)
 	if err != nil {
@@ -125,7 +125,7 @@ func (n *Nats) AskSave(event *storage.Event) (uint, error) {
 		slog.Error("couldn't atoi", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
-	return uint(id), nil
+	return id, nil
 }
 
 func (n *Nats) EventDeleter(ctx context.Context) (*nats.Subscription, error) {
@@ -136,7 +136,7 @@ func (n *Nats) EventDeleter(ctx context.Context) (*nats.Subscription, error) {
 			slog.Error("couldn't parse id", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 			return
 		}
-		if err = n.db.DeleteEvent(ctx, uint(id)); err != nil {
+		if err = n.db.DeleteEvent(ctx, id); err != nil {
 			slog.Error("couldn't delete event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 			return
 		}
@@ -147,7 +147,7 @@ func (n *Nats) EventDeleter(ctx context.Context) (*nats.Subscription, error) {
 	return sub, nil
 }
 
-func (n *Nats) AskDelete(id uint) error {
+func (n *Nats) AskDelete(id uint64) error {
 	return n.b.Publish(fmt.Sprintf("%s%d", AskDeleteEvent, id), nil)
 }
 

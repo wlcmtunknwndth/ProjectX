@@ -1,5 +1,7 @@
 services:
   server:
+    volumes:
+      - data:/data
     environment:
       - config_path=/var/service_config/config.yaml
       - auth_key=truetechhack2024
@@ -51,4 +53,6 @@ networks:
 
 volumes:
   db:
+    driver: local
+  data:
     driver: local
