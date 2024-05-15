@@ -1,0 +1,15 @@
+db:
+  db_user: "postgres"
+  db_pass: "postgres"
+  db_name: "postgres"
+  db_port: "5432"
+  ssl_mode: "disable"
+server:
+  timeout: 10s
+  idle_timeout: 30s
+  address: "0.0.0.0:63342"
+nats:
+  address: "nats://nats:4222"
+  retry: Yes
+  max_reconnects: 3
+  reconnect_wait: 2s
