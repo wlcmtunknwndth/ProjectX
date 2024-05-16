@@ -12,6 +12,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 )
@@ -34,6 +35,7 @@ const (
 	StatusInternalServerError  = "Internal server error"
 	StatusDeleted              = "Event deleted"
 	StatusPatched              = "Event patched"
+	StatusFound                = "Found"
 )
 
 func (e *EventsHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
@@ -101,6 +103,38 @@ func (e *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
 		return
 	}
+}
+
+func (e *EventsHandler) GetEventsByFeature(w http.ResponseWriter, r *http.Request) {
+	const op = "handlers.event.GetEventsByFeature"
+	corsSkip.EnableCors(w, r)
+
+	parse, err := url.Parse(r.URL.String())
+	if err != nil {
+		return
+	}
+
+	params, err := url.ParseQuery(parse.RawQuery)
+	if err != nil {
+		return
+	}
+
+	features := params["feature"]
+
+	data, err := e.Broker.AskFilteredEvents(features)
+	if err != nil {
+		slog.Error("couldn't wait for filtered features", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
+		return
+	}
+
+	if _, err = w.Write(data); err != nil {
+		slog.Error("couldn't write filtered features", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
+		return
+	}
+
+	httpResponse.Write(w, http.StatusOK, StatusFound)
 }
 
 func (e *EventsHandler) PatchEvent(w http.ResponseWriter, r *http.Request) {

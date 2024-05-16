@@ -126,6 +126,13 @@ func main() {
 	}
 	defer patch.Unsubscribe()
 
+	featurer, err := ns.FilteredEventsSender(context.Background())
+	if err != nil {
+		slog.Error("couldn't run filtered events sender", slogResponse.SlogErr(err))
+		return
+	}
+	defer featurer.Unsubscribe()
+
 	slog.Info("successfully initialized NATS")
 
 	authService := auth.Auth{Db: db}
@@ -149,6 +156,9 @@ func main() {
 
 	router.Options("/event", corsSkip.EnableCors)
 	router.Get("/event", eventService.GetEvent)
+
+	router.Options("/events", corsSkip.EnableCors)
+	router.Get("/events", eventService.GetEventsByFeature)
 
 	router.Options("/delete", corsSkip.EnableCors)
 	router.Delete("/delete", eventService.DeleteEvent)

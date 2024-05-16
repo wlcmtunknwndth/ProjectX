@@ -2,10 +2,15 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"github.com/lib/pq"
+	"github.com/wlcmtunknwndth/hackBPA/internal/lib/compareStrings"
+	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
 	"github.com/wlcmtunknwndth/hackBPA/internal/storage"
+	"log/slog"
 	"slices"
+	"sync"
 )
 
 var featuresToId = map[string]int{
@@ -52,25 +57,6 @@ func (s *Storage) GetEvent(ctx context.Context, id uint64) (*storage.Event, erro
 	return &event, nil
 }
 
-func cmpStrings(a, b string) int {
-	if len(a) == 0 && len(b) == 0 {
-		return 0
-	} else if len(a) == 0 {
-		return -1
-	} else if len(b) == 0 {
-		return 1
-	}
-	for i := 0; i < len(a) || i < len(b); i++ {
-		if a[i] < b[i] {
-			return -1
-		}
-		if a[i] > b[i] {
-			return 1
-		}
-	}
-	return 0
-}
-
 func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64, error) {
 	const op = "storage.postgres.events.CreateEvent"
 
@@ -85,7 +71,7 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64
 
 	var features = make([]int, 0, 2)
 	if event.Feature != nil {
-		slices.SortFunc(event.Feature, cmpStrings)
+		slices.SortFunc(event.Feature, compareStrings.CmpStr)
 		for _, val := range event.Feature {
 			featureId, ok := featuresToId[val]
 			if !ok {
@@ -101,6 +87,68 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64
 	}
 
 	return indId, nil
+}
+
+func (s *Storage) GetEventsByFeature(ctx context.Context, features []string) ([]storage.Event, error) {
+	const op = "storage.postgres.events.GetEventsByFeature"
+
+	var rows *sql.Rows
+	if features != nil {
+		var ids = make([]int, 0, len(features))
+		for i, _ := range features {
+			id, ok := featuresToId[features[i]]
+			if ok {
+				ids = append(ids, id)
+			}
+		}
+		if len(ids) == 0 {
+			ids = []int{0, 1, 2, 3, 4}
+		}
+		var err error
+		rows, err = s.driver.QueryContext(ctx, getIndexesByFeature, pq.Array(ids))
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+	} else {
+		var err error
+		rows, err = s.driver.QueryContext(ctx, getAllIndexes)
+		if err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+
+		}
+	}
+
+	var events []storage.Event
+	//var wg sync.WaitGroup
+	var mtx sync.Mutex
+	for rows.Next() {
+		//wg.Add(1)
+		go func() {
+			defer mtx.Unlock()
+
+			var index storage.Index
+			err := rows.Scan(&index.Id, &index.EventId, pq.Array(&index.FeatureId))
+			if err != nil {
+				slog.Error("couldn't scan index row", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+				return
+			}
+
+			var event storage.Event
+			if err := s.driver.QueryRow(getEvent, index.Id).Scan(&event.Id, &event.Price,
+				&event.Restrictions, &event.Date, &event.City, &event.Address, &event.Name,
+				&event.ImgPath, &event.Description,
+			); err != nil {
+				slog.Error("couldn't get event by feature", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+				return
+			}
+			events = append(events, event)
+		}()
+		mtx.Lock()
+	}
+	//wg.Wait()
+
+	return events, nil
 }
 
 func (s *Storage) DeleteEvent(ctx context.Context, id uint64) error {

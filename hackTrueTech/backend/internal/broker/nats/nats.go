@@ -14,6 +14,7 @@ type Storage interface {
 	DeleteEvent(context.Context, uint64) error
 	CreateEvent(context.Context, *storage.Event) (uint64, error)
 	PatchEvent(context.Context, *storage.Event) error
+	GetEventsByFeature(ctx context.Context, features []string) ([]storage.Event, error)
 }
 
 type Nats struct {

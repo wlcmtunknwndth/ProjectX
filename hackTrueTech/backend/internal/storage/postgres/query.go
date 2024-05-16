@@ -21,7 +21,8 @@ const (
                    			) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id
 	`
 	changeImgPath = "UPDATE events SET img_path=$1"
-	patchEvent    = `UPDATE events SET price = $1,
+
+	patchEvent = `UPDATE events SET price = $1,
 											restrictions = $2,
 											date = $3,
 											city = $4,
@@ -31,12 +32,14 @@ const (
 									WHERE id = $8
 											`
 
-	deleteEvent        = "DELETE FROM events WHERE id = $1"
-	getEventsByFeature = "SELECT * FROM events WHERE date BETWEEN $1 AND $2 AND feature = $3"
+	deleteEvent = "DELETE FROM events WHERE id = $1"
 
 	createIndex = `INSERT INTO index(event_id, features) VALUES ($1, $2) RETURNING id`
-	getIndex    = `SELECT event_id, features FROM index WHERE id = $1`
-	getFeatures = `SELECT features FROM idnex WHERE id = $1 `
+
+	getIndex = `SELECT event_id, features FROM index WHERE id = $1`
+	//getFeatures        = `SELECT features FROM idnex WHERE id = $1`
+	getIndexesByFeature = "SELECT * FROM index WHERE features = $1"
+	getAllIndexes       = "SELECT * FROM index LIMIT 30"
 
 	getCachedIds    = `SELECT * FROM cache`
 	saveCache       = `INSERT INTO cache(id) VALUES($1)`

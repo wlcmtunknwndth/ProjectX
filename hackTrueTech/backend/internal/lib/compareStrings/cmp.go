@@ -1,25 +1,20 @@
 package compareStrings
 
-func CmpStr(greater, lower string) int {
-	if len(greater) == 0 {
+func CmpStr(a, b string) int {
+	if len(a) == 0 && len(b) == 0 {
+		return 0
+	} else if len(a) == 0 {
 		return -1
-	}
-	if len(lower) == 0 {
+	} else if len(b) == 0 {
 		return 1
 	}
-
-	for i := 0; ; i++ {
-		if i >= len(greater)-1 {
+	for i := 0; i < len(a) || i < len(b); i++ {
+		if a[i] < b[i] {
 			return -1
 		}
-		if i >= len(lower)-1 {
+		if a[i] > b[i] {
 			return 1
-		}
-
-		if greater[i] > lower[i] {
-			return 1
-		} else if greater[i] < lower[i] {
-			return -1
 		}
 	}
+	return 0
 }

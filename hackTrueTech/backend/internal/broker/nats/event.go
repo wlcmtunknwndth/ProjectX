@@ -1,8 +1,9 @@
 package nats
 
 import (
+	"bytes"
 	"context"
-	"encoding/binary"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
 	"github.com/nats-io/nats.go"
@@ -14,27 +15,29 @@ import (
 )
 
 const (
-	MustSaveEvent   = "save_event"
-	MustDeleteEvent = "del.*"
-	AskDeleteEvent  = "del."
-	MustSendEvent   = "get.*"
-	AskGetEvent     = "get."
-	MustPatchEvent  = "patch.*"
-	AskPatchEvent   = "patch."
+	MustSaveEvent          = "save_event"
+	MustDeleteEvent        = "del.*"
+	AskDeleteEvent         = "del."
+	MustSendEvent          = "get.*"
+	AskGetEvent            = "get."
+	MustPatchEvent         = "patch.*"
+	AskPatchEvent          = "patch."
+	MustSendFilteredEvents = "filtered_events"
+	AskFilteredEvents      = "filtered_events"
 )
 
 func convertUintToString(num uint64) string {
-	return strconv.FormatUint(uint64(num), 10)
+	return strconv.FormatUint(num, 10)
 }
 
-func convertUintToByte(num uint64) []byte {
-	var data = []byte{byte(0)}
-	if num == 0 {
-		return data
-	}
-	binary.BigEndian.PutUint64(data, uint64(num))
-	return data
-}
+//func convertUintToByte(num uint64) []byte {
+//	var data = []byte{byte(0)}
+//	if num == 0 {
+//		return data
+//	}
+//	binary.BigEndian.PutUint64(data, num)
+//	return data
+//}
 
 func convertStrToUint(str string) (uint64, error) {
 	return strconv.ParseUint(str, 10, 64)
@@ -176,4 +179,55 @@ func (n *Nats) AskPatch(event *storage.Event) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return n.b.Publish(fmt.Sprintf("%s%d", AskPatchEvent, event.Id), data)
+}
+
+func (n *Nats) FilteredEventsSender(ctx context.Context) (*nats.Subscription, error) {
+	const op = "broker.nats.event.FilteredEventsSender"
+
+	sub, err := n.b.Subscribe(MustSendFilteredEvents, func(msg *nats.Msg) {
+		var features []string
+		buf := &bytes.Buffer{}
+		buf.Write(msg.Data)
+		err := gob.NewDecoder(buf).Decode(&features)
+		if err != nil {
+			slog.Error("couldn't decode features", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+			return
+		}
+
+		events, err := n.db.GetEventsByFeature(ctx, features)
+		if err != nil {
+			slog.Error("couldn't get events by feature", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+			return
+		}
+
+		data, err := json.Marshal(events)
+		if err != nil {
+			slog.Error("couldn't marshal events", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+			return
+		}
+
+		if err = msg.Respond(data); err != nil {
+			slog.Error("couldn't respond to sub", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+			return
+		}
+	})
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	return sub, nil
+}
+
+func (n *Nats) AskFilteredEvents(features []string) ([]byte, error) {
+	const op = "broker.nats.event.AskFilteredEvents"
+	buf := &bytes.Buffer{}
+	err := gob.NewEncoder(buf).Encode(&features)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+	msg, err := n.b.Request(AskFilteredEvents, buf.Bytes(), 5*time.Second)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return msg.Data, nil
 }
