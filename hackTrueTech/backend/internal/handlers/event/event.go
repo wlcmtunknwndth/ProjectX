@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"time"
 )
 
 type Cache interface {
@@ -103,7 +102,6 @@ func (e *EventsHandler) GetEvent(w http.ResponseWriter, r *http.Request) {
 		httpResponse.Write(w, http.StatusInternalServerError, StatusInternalServerError)
 		return
 	}
-	time.Sleep(time.Second)
 
 	if _, err = w.Write(data); err != nil {
 		slog.Error("couldn't send event", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
