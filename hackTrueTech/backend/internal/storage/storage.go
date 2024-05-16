@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	ImageFolder = "./data"
+	ImageFolder = "/data"
 )
 
 type Storage struct {
