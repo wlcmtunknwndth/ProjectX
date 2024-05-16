@@ -74,11 +74,11 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64
 		slices.SortFunc(event.Feature, compareStrings.CmpStr)
 		for _, val := range event.Feature {
 			featureId, ok := featuresToId[val]
-			if !ok {
-				continue
+			if ok {
+				features = append(features, featureId)
 			}
-			features = append(features, featureId)
 		}
+		slog.Info("features", slog.Any("ids", features))
 	}
 
 	var indId uint64
@@ -102,7 +102,7 @@ func (s *Storage) GetEventsByFeature(ctx context.Context, features []string) ([]
 			}
 		}
 		if len(ids) == 0 {
-			ids = []int{0, 1, 2, 3, 4}
+			ids = []int{1, 2, 3, 4}
 		}
 		var err error
 		rows, err = s.driver.QueryContext(ctx, getIndexesByFeature, pq.Array(ids))
@@ -120,12 +120,11 @@ func (s *Storage) GetEventsByFeature(ctx context.Context, features []string) ([]
 	}
 
 	var events []storage.Event
-	//var wg sync.WaitGroup
-	var mtx sync.Mutex
+	var wg sync.WaitGroup
 	for rows.Next() {
-		//wg.Add(1)
+		wg.Add(1)
 		go func() {
-			defer mtx.Unlock()
+			defer wg.Done()
 
 			var index storage.Index
 			err := rows.Scan(&index.Id, &index.EventId, pq.Array(&index.FeatureId))
@@ -144,9 +143,8 @@ func (s *Storage) GetEventsByFeature(ctx context.Context, features []string) ([]
 			}
 			events = append(events, event)
 		}()
-		mtx.Lock()
+		wg.Wait()
 	}
-	//wg.Wait()
 
 	return events, nil
 }

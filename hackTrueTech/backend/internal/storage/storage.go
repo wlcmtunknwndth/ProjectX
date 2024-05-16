@@ -76,7 +76,7 @@ func ParseFormData(r *http.Request) (*Event, error) {
 	if event.Date, err = time.Parse(time.RFC3339, mForm.Value["date"][0]); err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
-	if event.Feature = mForm.Value["features"]; err != nil {
+	if event.Feature = mForm.Value["feature"]; err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 	if event.City = mForm.Value["city"][0]; err != nil {
