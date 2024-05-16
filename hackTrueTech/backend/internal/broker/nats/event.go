@@ -30,15 +30,6 @@ func convertUintToString(num uint64) string {
 	return strconv.FormatUint(num, 10)
 }
 
-//func convertUintToByte(num uint64) []byte {
-//	var data = []byte{byte(0)}
-//	if num == 0 {
-//		return data
-//	}
-//	binary.BigEndian.PutUint64(data, num)
-//	return data
-//}
-
 func convertStrToUint(str string) (uint64, error) {
 	return strconv.ParseUint(str, 10, 64)
 }

@@ -45,12 +45,12 @@ func main() {
 	}
 
 	fileHandler := http.StripPrefix("/static/", http.FileServer(http.Dir("./data")))
-	go func() {
-		if err := http.ListenAndServe(":63345", fileHandler); err != nil {
-			slog.Error("couldn't run file server")
-			return
-		}
-	}()
+	//go func() {
+	//	if err := http.ListenAndServe(cfg.FileServer.Port, fileHandler); err != nil {
+	//		slog.Error("couldn't run file server")
+	//		return
+	//	}
+	//}()
 
 	db, err := postgres.New(&cfg.DB)
 	if err != nil {
@@ -137,6 +137,7 @@ func main() {
 
 	authService := auth.Auth{Db: db}
 
+	router.Handle("/static/*", fileHandler)
 	router.Options("/register", corsSkip.EnableCors)
 	router.Post("/register", authService.Register)
 

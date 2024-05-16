@@ -13,3 +13,5 @@ nats:
   retry: Yes
   max_reconnects: 3
   reconnect_wait: 2s
+fileServer:
+  port: ":63342"

@@ -9,9 +9,14 @@ import (
 )
 
 type Config struct {
-	DB     Database `yaml:"db" env-required:"true"`
-	Server Server   `yaml:"server" env-required:"true"`
-	Nats   Nats     `yaml:"nats" env-required:"true"`
+	DB         Database   `yaml:"db" env-required:"true"`
+	Server     Server     `yaml:"server" env-required:"true"`
+	Nats       Nats       `yaml:"nats" env-required:"true"`
+	FileServer FileServer `yaml:"fileServer"`
+}
+
+type FileServer struct {
+	Port string `yaml:"port" env-default:"63345"`
 }
 
 type Database struct {

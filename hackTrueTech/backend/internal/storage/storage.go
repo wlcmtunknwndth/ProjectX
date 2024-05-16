@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/nats-io/nats.go"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
 	"io"
@@ -54,7 +55,6 @@ func EventToJSON(event *Event) ([]byte, error) {
 
 const (
 	MaxSizeForm = 1024 * 1024 * 10
-	ImageExt    = ".svg"
 )
 
 func ParseFormData(r *http.Request) (*Event, error) {
@@ -92,27 +92,23 @@ func ParseFormData(r *http.Request) (*Event, error) {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	year, month, day := event.Date.Date()
-	path := fmt.Sprintf("%s/%d%d%d%s", ImageFolder, year, month, day, event.Name)
-	if err = os.Mkdir(path, 0777); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
-	}
-
-	for i, file := range mForm.File["img_path"] {
-		img, err := file.Open()
+	files, ok := mForm.File["img_path"]
+	ext := strings.Split(files[0].Filename, ".")
+	path := fmt.Sprintf("%s/%s.%s", ImageFolder, uuid.NewString(), ext[len(ext)-1])
+	if ok {
+		img, err := files[0].Open()
 		if err != nil {
 			slog.Error("couldn't open sent image", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
-			continue
+			return &event, fmt.Errorf("%s: %w", op, err)
 		}
-		ext := strings.Split(file.Filename, ".")
-		localFile, err := os.Create(fmt.Sprintf("%s/%d%s", path, i, ext[len(ext)-1]))
+		localFile, err := os.Create(path)
 		if err != nil {
 			slog.Error("couldn't create image copy", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
-			continue
+			return &event, fmt.Errorf("%s: %w", op, err)
 		}
 		if _, err = io.Copy(localFile, img); err != nil {
 			slog.Error("couldn't save image", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
-			continue
+			return &event, fmt.Errorf("%s: %w", op, err)
 		}
 	}
 

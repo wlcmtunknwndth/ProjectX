@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/wlcmtunknwndth/hackBPA/internal/auth"
-	"github.com/wlcmtunknwndth/hackBPA/internal/broker/nats"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/corsSkip"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/httpResponse"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
@@ -22,8 +21,16 @@ type Cache interface {
 	GetOrder(uuid string) (*storage.Event, bool)
 }
 
+type Broker interface {
+	AskSave(*storage.Event) (uint64, error)
+	AskFilteredEvents([]string) ([]byte, error)
+	AskEvent(uint64) ([]byte, error)
+	AskPatch(*storage.Event) error
+	AskDelete(uint64) error
+}
+
 type EventsHandler struct {
-	Broker *nats.Nats
+	Broker Broker
 	Cache  Cache
 }
 
