@@ -20,7 +20,7 @@ var featuresToId = map[string]int{
 	"neuro":      4,
 }
 
-var idToFeature = map[uint64]string{
+var idToFeature = map[int64]string{
 	1: "blind",
 	2: "deaf",
 	3: "disability",
@@ -31,7 +31,7 @@ func (s *Storage) GetEvent(ctx context.Context, id uint64) (*storage.Event, erro
 	const op = "storage.postgres.events.GetEvent"
 
 	var index storage.Index
-	err := s.driver.QueryRowContext(ctx, getIndex, &id).Scan(&index.EventId, pq.Array(&index.FeatureId))
+	err := s.driver.QueryRowContext(ctx, getIndex, &id).Scan(&index.EventId, &index.FeatureId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -46,13 +46,21 @@ func (s *Storage) GetEvent(ctx context.Context, id uint64) (*storage.Event, erro
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	for _, val := range index.FeatureId {
-		ftr, ok := idToFeature[uint64(val.Int64)]
+	features := make([]string, 0, len(index.FeatureId))
+	for i, _ := range index.FeatureId {
+		//var idd int64
+		//err = index.FeatureId
+		//if err != nil {
+		//	slog.Error("couldn't scan id", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
+		//	continue
+		//}
+		ftr, ok := idToFeature[index.FeatureId[i]]
 		if !ok {
 			continue
 		}
-		event.Feature = append(event.Feature, ftr)
+		features = append(features, ftr)
 	}
+	event.Feature = features
 
 	return &event, nil
 }
@@ -78,7 +86,6 @@ func (s *Storage) CreateEvent(ctx context.Context, event *storage.Event) (uint64
 				features = append(features, featureId)
 			}
 		}
-		slog.Info("features", slog.Any("ids", features))
 	}
 
 	var indId uint64

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
 	"io"
@@ -30,7 +31,7 @@ type Event struct {
 	Price        uint64    `json:"price"`
 	Restrictions uint64    `json:"restrictions"`
 	Date         time.Time `json:"date"`
-	Feature      []string  `json:"feature,omitempty"`
+	Feature      []string  `json:"feature"`
 	City         string    `json:"city"`
 	Address      string    `json:"address"`
 	Name         string    `json:"name"`
@@ -41,7 +42,7 @@ type Event struct {
 type Index struct {
 	Id        uint64
 	EventId   uint64
-	FeatureId []sql.NullInt64
+	FeatureId pq.Int64Array
 }
 
 func EventToJSON(event *Event) ([]byte, error) {
