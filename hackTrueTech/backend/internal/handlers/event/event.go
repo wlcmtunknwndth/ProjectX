@@ -139,7 +139,8 @@ func (e *EventsHandler) GetEventsByFeature(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	httpResponse.Write(w, http.StatusOK, StatusFound)
+	//httpResponse.Write(w, http.StatusOK, StatusFound)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (e *EventsHandler) PatchEvent(w http.ResponseWriter, r *http.Request) {
