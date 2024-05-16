@@ -41,9 +41,9 @@ const (
 func (e *EventsHandler) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.event.CreateEvent"
 
-	if !checkAdminRights(w, r) {
-		return
-	}
+	//if !checkAdminRights(w, r) {
+	//	return
+	//}
 
 	corsSkip.EnableCors(w, r)
 
@@ -140,9 +140,9 @@ func (e *EventsHandler) GetEventsByFeature(w http.ResponseWriter, r *http.Reques
 func (e *EventsHandler) PatchEvent(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.event.PatchEvent"
 
-	if !checkAdminRights(w, r) {
-		return
-	}
+	//if !checkAdminRights(w, r) {
+	//	return
+	//}
 
 	corsSkip.EnableCors(w, r)
 	body := r.Body
@@ -177,9 +177,9 @@ func (e *EventsHandler) PatchEvent(w http.ResponseWriter, r *http.Request) {
 
 func (e *EventsHandler) DeleteEvent(w http.ResponseWriter, r *http.Request) {
 	const op = "handlers.event.DeleteEvent"
-	if !checkAdminRights(w, r) {
-		return
-	}
+	//if !checkAdminRights(w, r) {
+	//	return
+	//}
 
 	corsSkip.EnableCors(w, r)
 
