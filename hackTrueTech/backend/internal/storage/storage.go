@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
 	"io"
@@ -39,12 +38,6 @@ type Event struct {
 	Description  string    `json:"description"`
 }
 
-type Index struct {
-	Id        uint64
-	EventId   uint64
-	FeatureId pq.Int64Array
-}
-
 func EventToJSON(event *Event) ([]byte, error) {
 	const op = "storage.EventToJSON"
 	data, err := json.Marshal(*event)
@@ -68,29 +61,37 @@ func ParseFormData(r *http.Request) (*Event, error) {
 
 	var event Event
 
-	if event.Price, err = strconv.ParseUint(mForm.Value["price"][0], 10, 64); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["price"] != nil {
+		if event.Price, err = strconv.ParseUint(mForm.Value["price"][0], 10, 64); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
 	}
-	if event.Restrictions, err = strconv.ParseUint(mForm.Value["restrictions"][0], 10, 64); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["restrictions"] != nil {
+		if event.Restrictions, err = strconv.ParseUint(mForm.Value["restrictions"][0], 10, 64); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
 	}
-	if event.Date, err = time.Parse(time.RFC3339, mForm.Value["date"][0]); err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+
+	if mForm.Value["date"] != nil {
+		if event.Date, err = time.Parse(time.RFC3339, mForm.Value["date"][0]); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
 	}
-	if event.Feature = mForm.Value["feature"]; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+
+	if mForm.Value["feature"] != nil {
+		event.Feature = mForm.Value["feature"]
 	}
-	if event.City = mForm.Value["city"][0]; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["city"] != nil {
+		event.City = mForm.Value["city"][0]
 	}
-	if event.Address = mForm.Value["address"][0]; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["address"] != nil {
+		event.Address = mForm.Value["address"][0]
 	}
-	if event.Name = mForm.Value["name"][0]; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["name"] != nil {
+		event.Name = mForm.Value["name"][0]
 	}
-	if event.Description = mForm.Value["description"][0]; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+	if mForm.Value["description"] != nil {
+		event.Description = mForm.Value["description"][0]
 	}
 
 	files, ok := mForm.File["img_path"]

@@ -3,12 +3,19 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/wlcmtunknwndth/hackBPA/internal/config"
 )
 
 type Storage struct {
 	driver *sql.DB
+}
+
+type Index struct {
+	Id        uint64
+	EventId   uint64
+	FeatureId pq.Int64Array
 }
 
 func New(config *config.Database) (*Storage, error) {

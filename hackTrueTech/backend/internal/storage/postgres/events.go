@@ -30,7 +30,7 @@ var idToFeature = map[int64]string{
 func (s *Storage) GetEvent(ctx context.Context, id uint64) (*storage.Event, error) {
 	const op = "storage.postgres.events.GetEvent"
 
-	var index storage.Index
+	var index Index
 	err := s.driver.QueryRowContext(ctx, getIndex, &id).Scan(&index.EventId, &index.FeatureId)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -133,8 +133,8 @@ func (s *Storage) GetEventsByFeature(ctx context.Context, features []string) ([]
 		go func() {
 			defer wg.Done()
 
-			var index storage.Index
-			err := rows.Scan(&index.Id, &index.EventId, pq.Array(&index.FeatureId))
+			var index Index
+			err := rows.Scan(&index.Id, &index.EventId, &index.FeatureId)
 			if err != nil {
 				slog.Error("couldn't scan index row", slogResponse.SlogOp(op), slogResponse.SlogErr(err))
 				return
