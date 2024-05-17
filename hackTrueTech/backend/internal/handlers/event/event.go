@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/wlcmtunknwndth/hackBPA/internal/auth"
+	"github.com/wlcmtunknwndth/hackBPA/internal/lib/compareStrings"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/corsSkip"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/httpResponse"
 	"github.com/wlcmtunknwndth/hackBPA/internal/lib/slogResponse"
@@ -12,6 +13,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 )
 
@@ -125,6 +127,8 @@ func (e *EventsHandler) GetEventsByFeature(w http.ResponseWriter, r *http.Reques
 	}
 
 	features := params["feature"]
+
+	slices.SortFunc(features, compareStrings.CmpStr)
 
 	data, err := e.Broker.AskFilteredEvents(features)
 	if err != nil {
